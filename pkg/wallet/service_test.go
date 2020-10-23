@@ -1,7 +1,7 @@
 package wallet
 
 import (
-	"log"
+	
 	"github.com/slayv1/wallet/pkg/types"
 	"testing"
 )
@@ -180,13 +180,16 @@ func TestService_Export_success_user(t *testing.T) {
 func TestService_Import_success_user(t *testing.T) {
 	var svc Service
 
-	err := svc.ImportFromFile("export.txt")
 
+	err := svc.ImportFromFile("export.txt")
+	
 	if err != nil {
 		t.Errorf("method ExportToFile returned not nil error, err => %v", err)
 	}
 
 }
+
+
 
 func TestService_ExportImport_success_user(t *testing.T) {
 	var svc Service
@@ -195,19 +198,20 @@ func TestService_ExportImport_success_user(t *testing.T) {
 	svc.RegisterAccount("+992000000002")
 	svc.RegisterAccount("+992000000003")
 	svc.RegisterAccount("+992000000004")
-
+	
 	err := svc.Export("data")
 	if err != nil {
 		t.Errorf("method ExportToFile returned not nil error, err => %v", err)
 	}
 
 	err = svc.Import("data")
-
+	
 	if err != nil {
 		t.Errorf("method ExportToFile returned not nil error, err => %v", err)
 	}
 
 }
+
 
 func TestService_ExportHistory_success_user(t *testing.T) {
 	var svc Service
@@ -251,7 +255,8 @@ func TestService_ExportHistory_success_user(t *testing.T) {
 
 }
 
-func BenchmarkSumPayment_user(b *testing.B) {
+
+func BenchmarkSumPayment_user(b *testing.B){
 	var svc Service
 
 	account, err := svc.RegisterAccount("+992000000001")
@@ -283,75 +288,36 @@ func BenchmarkSumPayment_user(b *testing.B) {
 	want := types.Money(66)
 
 	got := svc.SumPayments(2)
-	if want != got {
+	if want != got{
 		b.Errorf(" error, want => %v got => %v", want, got)
 	}
 
 }
 
-func BenchmarkFilterPayments_user(b *testing.B) {
-	var svc Service
-
-	account, err := svc.RegisterAccount("+992000000001")
-
-	if err != nil {
-		b.Errorf("method RegisterAccount returned not nil error, account => %v", account)
-	}
-
-	err = svc.Deposit(account.ID, 100_00)
-	if err != nil {
-		b.Errorf("method Deposit returned not nil error, error => %v", err)
-	}
-
-	_, err = svc.Pay(account.ID, 1, "Cafe")
-	_, err = svc.Pay(account.ID, 2, "Cafe")
-	_, err = svc.Pay(account.ID, 3, "Cafe")
-	_, err = svc.Pay(account.ID, 4, "Cafe")
-	_, err = svc.Pay(account.ID, 5, "Cafe")
-	_, err = svc.Pay(account.ID, 6, "Cafe")
-	_, err = svc.Pay(account.ID, 7, "Cafe")
-	_, err = svc.Pay(account.ID, 8, "Cafe")
-	_, err = svc.Pay(account.ID, 9, "Cafe")
-	_, err = svc.Pay(account.ID, 10, "Cafe")
-	_, err = svc.Pay(account.ID, 11, "Cafe")
-	if err != nil {
-		b.Errorf("method Pay returned not nil error, err => %v", err)
-	}
-
-	_, err = svc.FilterPayments(account.ID, 2)
-	if err != nil {
-		b.Errorf(" method FilterPayments returned  err => %v", err)
-	}
-
+func TestSumPaymentsWithProgress(t *testing.T){
+    wallet := Service{};
+    total, err := generatePayments(&wallet, 10);
+    if(err != nil){
+        t.Errorf("TestSumPaymentsWithProgress(): %v", err);
+    }
+    ch := wallet.SumPaymentsWithProgress();
+    var sum types.Money = 0;
+    for channel := range(ch){
+        sum += channel.Result;
+    }
+    if(total != sum){
+        t.Error("TestSumPaymentsWithProgress(): total is not equal to sum");
+    }
 }
-
-func BenchmarkSumPaymentsWithProgress_user(b *testing.B) {
-	var svc Service
-
-	account, err := svc.RegisterAccount("+992000000001")
-
-	if err != nil {
-		b.Errorf("method RegisterAccount returned not nil error, account => %v", account)
-	}
-
-	err = svc.Deposit(account.ID, 10000000_0000000)
-	if err != nil {
-		b.Errorf("method Deposit returned not nil error, error => %v", err)
-	}
-
-	for i := 0; i < 1000; i++ {
-		svc.Pay(account.ID, types.Money(i), "Cafe")
-	} 
-
-	ch := svc.SumPaymentsWithProgress()
-
-	 s, ok := <-ch
-
-	if !ok {
-		b.Errorf(" method SumPaymentsWithProgress ok not closed => %v", ok)
-	} 
-
-	log.Println("=======>>>>>",s) 
-
+func TestSumPaymentsWithProgress_empty(t *testing.T){
+    wallet := Service{};
+    var total types.Money = 0;
+    ch := wallet.SumPaymentsWithProgress();
+    var sum types.Money = 0;
+    for channel := range(ch){
+        sum += channel.Result;
+    }
+    if(total != sum){
+        t.Error("TestSumPaymentsWithProgress(): total is not equal to sum");
+    }
 }
-
