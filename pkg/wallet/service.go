@@ -718,54 +718,54 @@ func (s *Service) FilterPaymentsByFn(filter func(payment types.Payment) bool, go
 	}
 	return  ps, nil
 }
-
+//function Sum Payments With Progress 
 func (s *Service)SumPaymentsWithProgress() <-chan types.Progress{
-    if(len(s.payments) == 0){
-        ch := make(chan types.Progress);
-        close(ch);
-        return ch;
-    }
-    const sizeOfBlock = 100_000;
-    var goroutines int = len(s.payments) / sizeOfBlock;
-    var sizeOfChannels int = len(s.payments) / sizeOfBlock;
-    channels := make([]<-chan types.Progress, sizeOfChannels);
-    for i := 0; i <= goroutines; i ++{
-        var l int = i * sizeOfBlock;
-        var r int = (i + 1) * sizeOfBlock;
-        if(r > len(s.payments)){
-            r = len(s.payments);
-        }
-        ch := make(chan types.Progress);
-        go func(ch chan<- types.Progress, data []*types.Payment){
-            defer close(ch);
-            var total types.Money = 0;
-            for _, payment := range(data){
-                total += payment.Amount;
-            }
-            ch <- types.Progress{
-                Part: len(data),
-                Result: total,
-            };
-        }(ch, s.payments[l:r]);
-        channels[i] = ch;
-    }
-    return merge(channels);
+	if(len(s.payments) == 0){
+		ch := make(chan types.Progress);
+		close(ch);
+		return ch;
+	}
+	const sizeOfBlock = 100_000;
+	var goroutines int = len(s.payments) / sizeOfBlock;
+	var sizeOfChannels int = len(s.payments) / sizeOfBlock;
+	channels := make([]<-chan types.Progress, sizeOfChannels);
+	for i := 0; i <= goroutines; i ++{
+		var l int = i * sizeOfBlock;
+		var r int = (i + 1) * sizeOfBlock;
+		if(r > len(s.payments)){
+			r = len(s.payments);
+		}
+		ch := make(chan types.Progress);
+		go func(ch chan<- types.Progress, data []*types.Payment){
+			defer close(ch);
+			var total types.Money = 0;
+			for _, payment := range(data){
+				total += payment.Amount;
+			}
+			ch <- types.Progress{
+				Part: len(data),
+				Result: total,
+			};
+		}(ch, s.payments[l:r]);
+		channels[i] = ch;
+	}
+	return merge(channels);
 }
 func merge(channels []<-chan types.Progress) <-chan types.Progress{
-    wg := sync.WaitGroup{};
-    wg.Add(len(channels));
-    merged := make(chan types.Progress);
-    for _, ch := range(channels){
-        go func(ch <-chan types.Progress){
-            defer wg.Done();
-            for val := range(ch){
-                merged <- val;
-            }
-        }(ch);
-    }
-    go func(){
-        defer close(merged);
-        wg.Wait();
-    }()
-    return merged;
+	wg := sync.WaitGroup{};
+	wg.Add(len(channels));
+	merged := make(chan types.Progress);
+	for _, ch := range(channels){
+		go func(ch <-chan types.Progress){
+			defer wg.Done();
+			for val := range(ch){
+				merged <- val;
+			}
+		}(ch);
+	}
+	go func(){
+		defer close(merged);
+		wg.Wait();
+	}()
+	return merged;
 }
