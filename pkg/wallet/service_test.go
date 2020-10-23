@@ -294,4 +294,15 @@ func BenchmarkSumPayment_user(b *testing.B){
 	}
 
 }
-
+func TestSumPaymentsWithProgress_empty(t *testing.T){
+    wallet := Service{};
+    var total types.Money = 0;
+    ch := wallet.SumPaymentsWithProgress();
+    var sum types.Money = 0;
+    for channel := range(ch){
+        sum += channel.Result;
+    }
+    if(total != sum){
+        t.Error("TestSumPaymentsWithProgress(): total is not equal to sum");
+    }
+}
