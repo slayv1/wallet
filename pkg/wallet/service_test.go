@@ -341,7 +341,7 @@ func BenchmarkSumPaymentsWithProgress_user(b *testing.B) {
 		b.Errorf("method Deposit returned not nil error, error => %v", err)
 	}
 
-	for i := 0; i < 1000000000000; i++ {
+	for i := 0; i < 1000; i++ {
 		svc.Pay(account.ID, types.Money(i), "Cafe")
 	} 
 
